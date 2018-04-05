@@ -16,14 +16,10 @@
 #===============================================================================
 # Introductory code: Load packages/libraries, set paths, load datasets
 #===============================================================================
-
 #--Clear memory
 rm(list = ls(all = T))
 
 # << DATASETS >>
-#--Load photosynthesis data.
-psyn <- read.csv("./data/dataMaster_Peru_area.csv", header = T) %>%
-    filter(Taxon != "Paspallum")
 
 # << PACKAGES >>
 library(ggplot2)
@@ -36,6 +32,11 @@ library(reshape2)
 #library(nlsLoop)
 library(magrittr)
 library(tidyr)
+library(dplyr)
+
+#--Load photosynthesis data.
+psyn <- read.csv("./workingData/dataMaster_Peru_area.csv", header = T) %>%
+    filter(Taxon != "Paspallum") # eliminates the empty line
 
 # << GLOBAL OPTIONS >>
 #--Define colorblind palette (see http://www.cookbook-r.com/Graphs/Colors_%28ggplot2%29/).
@@ -58,7 +59,7 @@ psyn$rate <- "Net photosynthesis (umol m-2 s-1)"
 
 
 # Calculate Boltzmann leaf temperature
-psyn$invBT_eV <- 1 / (0.00008617 * (psyn$CTleaf + 273.15))
+psyn$invBT_eV <- 1 / (0.00008617 * (psyn$Tleaf + 273.15))
 
 
 
@@ -67,7 +68,7 @@ psyn$invBT_eV <- 1 / (0.00008617 * (psyn$CTleaf + 273.15))
 #=============================================================================
 
 #--Plot all curves on a single set of axes.
-ggplot(psyn, aes(x = CTleaf, y = Photo)) +
+ggplot(psyn, aes(x = Tleaf, y = Photo)) +
     stat_smooth(
         method = "lm",
         se = TRUE,
@@ -91,7 +92,7 @@ ggplot(psyn, aes(x = CTleaf, y = Photo)) +
     scale_linetype_manual(values = rep(c(1:6), each = 33))
 
 #--Plot all curves on a single set of axes (curves only).
-ggplot(psyn, aes(x = CTleaf, y = Photo)) + stat_smooth(
+ggplot(psyn, aes(x = Tleaf, y = Photo)) + stat_smooth(
     method = "lm",
     se = TRUE,
     fill = NA,
@@ -114,7 +115,7 @@ ggplot(psyn, aes(x = CTleaf, y = Photo)) + stat_smooth(
 for (i in seq_along(unique(psyn$curveID))) {
     print(ggplot(
             subset(psyn, psyn$curveID == i),
-            aes(x = CTleaf, y = Photo)
+            aes(x = Tleaf, y = Photo)
         ) +
             stat_smooth(
                 method = "lm",
@@ -140,7 +141,7 @@ for (i in seq_along(unique(psyn$curveID))) {
 
 #--Plot a single curve (e.g., curveID = 47).
 ggplot(subset(psyn, psyn$curveID == "4"),
-       aes(x = CTleaf, y = Photo)) +
+       aes(x = Tleaf, y = Photo)) +
     stat_smooth(
         method = "lm",
         se = TRUE,
@@ -163,7 +164,7 @@ ggplot(subset(psyn, psyn$curveID == "4"),
 #=========================================================================================
 
 #--Plot all curves on a single set of axes.----
-ggplot(psyn, aes(x = invBT_eV, y = A_umol_m2_s)) +
+ggplot(psyn, aes(x = invBT_eV, y = Photo)) +
     stat_smooth(
         method = "lm",
         se = TRUE,
@@ -295,7 +296,7 @@ BA_results <-
         Data = psyn,
         trait = "Photo",
         ID = "curveID",
-        temper = "CTleaf",
+        temper = "Tleaf",
         species = "Taxon",
         traitName = "rate",
         PLOT = TRUE,
@@ -322,7 +323,7 @@ SS_results <-
         Data = psyn,
         trait = "Photo",
         ID = "curveID",
-        temper = "CTleaf",
+        temper = "Tleaf",
         species = "Taxon",
         traitName = "rate",
         PLOT = TRUE,
@@ -414,7 +415,7 @@ median(sppMedianE$E_sch) + 1.57 * IQR(sppMedianE$E_sch, na.rm = T) / sqrt(length
 #--Plots
 #--Fig S1: Plot all fitted curves together
 # First, use aggregate to get min and max Tleaf for each leaf, then convert result to dataframe
-minMax <- aggregate(CTleaf ~ curveID, psyn, function(x) c(Tl_C_min = min(x), Tl_C_max = max(x)))
+minMax <- aggregate(Tleaf ~ curveID, psyn, function(x) c(Tl_C_min = min(x), Tl_C_max = max(x)))
 minMax <- cbind(minMax[-ncol(minMax)], minMax[[ncol(minMax)]])
 # Define function to make sequence between min and max Tleaf_C (including max)
 # see https://stackoverflow.com/questions/28419281/missing-last-sequence-in-seq-in-r; My function
@@ -482,7 +483,7 @@ FigS1b
 
 # Plot a single curve with data and S-S fit (curveID=131)
 FigS1a <-
-    ggplot(subset(psyn, psyn$curveID == "2"), aes(x = 1 / (0.00008617 * (CTleaf + 273.15)), y = Photo)) +
+    ggplot(subset(psyn, psyn$curveID == "2"), aes(x = 1 / (0.00008617 * (Tleaf + 273.15)), y = Photo)) +
     geom_point(
         shape = 21,
         size = 2.75,
