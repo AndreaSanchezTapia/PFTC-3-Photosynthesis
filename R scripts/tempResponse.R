@@ -16,10 +16,14 @@
 #===============================================================================
 # Introductory code: Load packages/libraries, set paths, load datasets
 #===============================================================================
+
 #--Clear memory
 rm(list = ls(all = T))
 
-# << DATASETS >>
+# << DIRECTORIES >>
+#--Set working directory
+#setwd("D:/PFTC3")
+#--Define the path to your data directory with a text string ending with "/".
 
 # << PACKAGES >>
 library(ggplot2)
@@ -39,20 +43,25 @@ psyn <- read.csv("./workingData/dataMaster_Peru_area.csv", header = T) %>%
     filter(Taxon != "Paspallum") # eliminates the empty line
 
 # << GLOBAL OPTIONS >>
-#--Define colorblind palette (see http://www.cookbook-r.com/Graphs/Colors_%28ggplot2%29/).
-cbPalette <- c("#000000",
-               "#E69F00",
-               "#56B4E9",
-               "#009E73",
-               "#CC79A7",
-               "#0072B2",
-               "#D55E00",
-               "#F0E442",
-               "#999999")
+#--Define colorblind palette
+#(see http://www.cookbook-r.com/Graphs/Colors_%28ggplot2%29/).
+cbPalette <-
+  c(
+    "#000000",
+    "#E69F00",
+    "#56B4E9",
+    "#009E73",
+    "#CC79A7",
+    "#0072B2",
+    "#D55E00",
+    "#F0E442",
+    "#999999"
+  )
 
 # << CLEAN AND MERGE DATA >>
 #--Add columns to identify individual temperature response curves in SUMO and RMBL data
-psyn <- transform(psyn, curveID = as.integer(factor(Filename, unique(Filename))))
+psyn <- transform(psyn, curveID = as.integer(factor(Filename,
+                                                    unique(Filename))))
 
 #--Add column for processID
 psyn$rate <- "Net photosynthesis (umol m-2 s-1)"
@@ -92,7 +101,8 @@ ggplot(psyn, aes(x = Tleaf, y = Photo)) +
     scale_linetype_manual(values = rep(c(1:6), each = 33))
 
 #--Plot all curves on a single set of axes (curves only).
-ggplot(psyn, aes(x = Tleaf, y = Photo)) + stat_smooth(
+ggplot(psyn, aes(x = Tleaf, y = Photo)) +
+  stat_smooth(
     method = "lm",
     se = TRUE,
     fill = NA,
@@ -112,11 +122,10 @@ ggplot(psyn, aes(x = Tleaf, y = Photo)) + stat_smooth(
     scale_colour_manual(values = rep("gray60", times = 30))
 
 #--Plot all curves on individual axes.
+
 for (i in seq_along(unique(psyn$curveID))) {
-    print(ggplot(
-            subset(psyn, psyn$curveID == i),
-            aes(x = Tleaf, y = Photo)
-        ) +
+    print(
+    ggplot(subset(psyn, psyn$curveID == i), aes(x = Tleaf, y = Photo)) +
             stat_smooth(
                 method = "lm",
                 se = TRUE,
@@ -125,7 +134,8 @@ for (i in seq_along(unique(psyn$curveID))) {
                 aes(colour = factor(curveID)),
                 data = subset(psyn, psyn$curveID == i)
             ) +
-            geom_point(aes(color = as.factor(curveID)), data = subset(psyn, psyn$curveID == i)) +
+            geom_point(aes(color = as.factor(curveID)),
+             data = subset(psyn, psyn$curveID == i)) +
             xlab(expression('Leaf temperature' ~ (degree * C))) +
             ylab(expression(
                 "Assimilation rate (" * mu ~ "mol" ~ m ^ -2 ~ s ^ -1 * ")"
@@ -135,7 +145,9 @@ for (i in seq_along(unique(psyn$curveID))) {
                 panel.grid.major = element_blank(),
                 panel.grid.minor = element_blank(),
                 axis.line = element_line(colour = "black")
-            )
+            ) +
+      labs(color = "Sample ID")
+
     )
 }
 
@@ -157,11 +169,12 @@ ggplot(subset(psyn, psyn$curveID == "4"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         axis.line = element_line(colour = "black")
-    )
+    ) +
+  labs(colour = "Sample ID")
 
-#=========================================================================================
+#===============================================================================
 # Part 2: Arrhenius plots
-#=========================================================================================
+#===============================================================================
 
 #--Plot all curves on a single set of axes.----
 ggplot(psyn, aes(x = invBT_eV, y = Photo)) +
@@ -236,15 +249,19 @@ for (i in seq_along(1:25)) {
                       formula = y ~ poly(x, 2, raw = TRUE),
                       aes(colour = factor(curveID)),
                   data = subset(psyn, psyn$curveID == i)) +
-          geom_point(aes(color = as.factor(curveID)), data = subset(psyn, psyn$curveID == i)) +
-      xlab(expression(paste('Leaf temperature ', '<1/',italic('kT'),'>', ' (',  eV^{-1}, ')'))) +
+          geom_point(aes(color = as.factor(curveID)),
+                     data = subset(psyn, psyn$curveID == i)) +
+      xlab(expression(
+        paste('Leaf temperature ', '<1/',italic('kT'),'>', ' (',  eV^{-1}, ')'))) +
       ylab(expression("Assimilation rate (" * mu ~ "mol" ~m^-2 ~s^-1 * ")")) +
       scale_y_continuous(trans = "log", breaks = trans_breaks("log", function(x) exp(x), n = 3),
                          labels = trans_format("log", math_format(e^.x))) +
       theme_bw(base_size = 12) +
-      theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+      theme(panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(),
             axis.line = element_line(colour = "black"))
-  )
+  ) +
+      labs(colour = "Sample ID")
 }
 
 
@@ -337,6 +354,8 @@ SS_results <-
 end.time <- Sys.time()
 time.taken <- end.time - start.time
 time.taken
+median(SS_results$E_sch, na.rm = T)
+
 # n.rand=100 took 2.358905 mins
 # n.rand=1000 took 20.06794 mins; this made no difference for median E (0.2918334 for 100 vs. 0.2918333 for 1000)
 
@@ -378,7 +397,7 @@ sppMedianE <- ddply(SS_results, .(Taxon), summarize,
 mean(sppMedianE$E_sch)
 # Mean 95% CI (0.43 to 0.64); (0.36 to 0.59) for fixed
 mean(SS_results$E_sch, na.rm = T) - 1.96 * (sd(SS_results$E_sch, na.rm = T) / sqrt(length(SS_results$E_sch)))
-mean(SS_results2$E_sch, na.rm = T) + 1.96 * (sd(SS_results2$E_sch, na.rm = T) / sqrt(length(SS_results2$E_sch)))
+mean(SS_results$E_sch, na.rm = T) + 1.96 * (sd(SS_results$E_sch, na.rm = T) / sqrt(length(SS_results$E_sch)))
 # Median (0.30); 0.22 for fixed
 median(SS_results$E_sch, na.rm = T)
 # Median 95% CI (0.23 to 0.37); (0.17 to 0.27) for fixed see https://stats.stackexchange.com/questions/184516/why-is-the-95-ci-for-the-median-supposed-to-be-%C2%B11-57iqr-sqrtn
@@ -403,8 +422,8 @@ median(sppMeanE$E_sch) + 1.57 * IQR(sppMeanE$E_sch) / sqrt(length(sppMeanE$E_sch
 # Mean (0.63); 0.54 for fixed
 mean(sppMedianE$E_sch)
 # Mean 95% CI (0.46 to 0.80); (0.31 to 0.76) for fixed
-mean(sppMedianE$E_sch)-1.96*(sd(sppMedianE$E_sch)/sqrt(length(sppMedianE$E_sch)))
-mean(sppMedianE$E_sch)+1.96*(sd(sppMedianE$E_sch)/sqrt(length(sppMedianE$E_sch)))
+mean(sppMedianE$E_sch) - 1.96 * (sd(sppMedianE$E_sch) / sqrt(length(sppMedianE$E_sch)))
+mean(sppMedianE$E_sch) + 1.96 * (sd(sppMedianE$E_sch) / sqrt(length(sppMedianE$E_sch)))
 # Median (0.47); 0.27 for fixed
 median(sppMedianE$E_sch)
 # 95% CI (0.32 to 0.62); (0.14 to 0.39) for fixed see https://stats.stackexchange.com/questions/184516/why-is-the-95-ci-for-the-median-supposed-to-be-%C2%B11-57iqr-sqrtn
@@ -435,7 +454,7 @@ SS_fits <-
             seqlast, minMax$Tl_C_min, minMax$Tl_C_max, 1
         ))
     )
-#rm(minMax)
+rm(minMax)
 # Merge Tleaf sequence with fitted parameter values from SS_results2 (this will omit bad curves)
 SS_fits <- merge(SS_fits, SS_results, by = "id")
 # Make Tleaf_K
@@ -491,7 +510,7 @@ FigS1a <-
         fill = "white"
     ) +
     geom_line(
-        data = subset(SS_fits, SS_fits$id == "131"),
+        data = subset(SS_fits, SS_fits$id == "20"),
         aes(x = 1 / (0.00008617 * (Tleaf_K)), y = Apred_umol_m2_s),
         alpha = 0.4
     ) +
@@ -540,7 +559,7 @@ ggplot(SS_results, aes(x = Taxon, y = E_sch)) +
 
 # E boxplots by taxon
 
-ggplot(SS_results, aes(x = Taxon, y = E_sch, fill = id_spp)) +
+ggplot(SS_results, aes(x = Taxon, y = E_sch, fill = factor(Taxon))) +
     geom_boxplot() +
     guides(fill = FALSE) +
     geom_hline(aes(yintercept = 0.32))  +
@@ -570,7 +589,8 @@ ggplot(SS_results, aes(x = Taxon, y = (T_pk_sch - 273.15))) +
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         axis.line = element_line(colour = "black")
-    )
+    ) +
+    facet_wrap( ~ Site)
 
 # Compare distributions across sites
 ggplot(SS_results, aes(x = E_sch, fill = Site)) +
@@ -581,8 +601,8 @@ ggplot(subset(SS_results, !is.na(SS_results$Site)),
     geom_density(alpha = .3)
 
 # thermoregulation
-psyn
-ggplot(psyn, aes(x = Tair, y = Tleaf)) +
+psyn %>%
+ggplot(aes(x = Tair, y = Tleaf)) +
     geom_point(aes(color = as.factor(Taxon)), data = psyn) +
     stat_smooth(
         method = "lm",
@@ -598,12 +618,12 @@ ggplot(psyn, aes(x = Tair, y = Tleaf)) +
     theme_bw(base_size = 12) +
     theme(
         #legend.position = "none",
-        legend.title = element_text("Species"),
+        legend.title = element_text(size = 0),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         axis.line = element_line(colour = "black")
     ) +
-    #scale_colour_manual(values = rep(cbPalette, times = 3)) +
+    scale_colour_manual(values = rep(cbPalette, times = 22)) +
     # plot each 22 times to maximize solids (there are 9 colors)
     coord_equal()
 
@@ -624,16 +644,16 @@ ggplot(psyn, aes(x = Tair, y = Tleaf)) +
     theme_bw(base_size = 12) +
     theme(
         #legend.position = "none",
-        legend.title = element_text("Species"),
+        legend.title = element_text(size = 0),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         axis.line = element_line(colour = "black")
     ) +
-    #scale_colour_manual(values = rep(cbPalette, times = 3)) +
+    scale_colour_manual(values = rep(cbPalette, times = 22)) +
     # plot each 22 times to maximize solids (there are 9 colors)
     coord_equal()
 
-###por todo
+###only QUE and WAY
 psyn %>% dplyr::filter(Site %in% c("QUE", "WAY")) %>%
 ggplot(aes(x = Tair, y = Tleaf)) +
     geom_point(aes(color = as.factor(Site))) +
@@ -649,12 +669,13 @@ ggplot(aes(x = Tair, y = Tleaf)) +
     ylab(expression("Leaf temperature" ~ (degree * C))) +
     theme_bw(base_size = 12) +
     theme(
-        legend.position = "none",
+        #legend.position = "none",
+        legend.title = element_text(size = 0),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         axis.line = element_line(colour = "black")
     ) +
-    #scale_colour_manual(values = rep(cbPalette, times = 3)) +
+    #scale_colour_manual(values = rep(cbPalette, times = 22)) +
     # plot each 22 times to maximize solids (there are 9 colors)
     coord_equal() +
     facet_grid(Taxon ~ .)
